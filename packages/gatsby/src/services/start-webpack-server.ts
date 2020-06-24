@@ -16,12 +16,9 @@ import { prepareUrls } from "../utils/prepare-urls"
 import { startServer } from "../utils/start-server"
 import { WebsocketManager } from "../utils/websocket-manager"
 import { IBuildContext } from "./"
-import {
-  markWebpackStatusAsPending,
-  markWebpackStatusAsDone,
-} from "../utils/webpack-status"
 import { enqueueFlush } from "../utils/page-data"
 import mapTemplatesToStaticQueryHashes from "../utils/map-templates-to-static-query-hashes"
+import { webpackLock, pageDataFlushLock } from "../utils/service-locks"
 
 export async function startWebpackServer({
   program,
@@ -35,24 +32,38 @@ export async function startWebpackServer({
   if (!program || !app || !store) {
     report.panic(`Missing required params`)
   }
-  let { compiler, webpackActivity, websocketManager } = await startServer(
-    program,
-    app,
-    workerPool
+
+  webpackLock.markStartRun()
+
+  const debounceWebpackResume = _.debounce(
+    () => {
+      webpackLock.markStartRun()
+      webpackWatching.resume()
+    },
+    300,
+    { leading: false }
   )
 
+  let {
+    compiler,
+    webpackActivity,
+    websocketManager,
+    webpackWatching,
+  } = await startServer(program, app, workerPool)
+
   compiler.hooks.invalid.tap(`log compiling`, function () {
-    markWebpackStatusAsPending()
+    webpackLock.markAsPending()
+
+    webpackLock.runOrEnqueue(debounceWebpackResume)
   })
 
   compiler.hooks.watchRun.tapAsync(`log compiling`, function (_, done) {
-    if (webpackActivity) {
-      webpackActivity.end()
+    if (!webpackActivity) {
+      webpackActivity = report.activityTimer(`Re-building development bundle`, {
+        id: `webpack-develop`,
+      })
+      webpackActivity.start()
     }
-    webpackActivity = report.activityTimer(`Re-building development bundle`, {
-      id: `webpack-develop`,
-    })
-    webpackActivity.start()
 
     done()
   })
@@ -148,7 +159,9 @@ export async function startWebpackServer({
         enqueueFlush()
       }
 
-      markWebpackStatusAsDone()
+      webpackWatching.suspend()
+      webpackLock.markEndRun()
+      pageDataFlushLock.runOrEnqueue(enqueueFlush)
       done()
 
       resolve({ compiler, websocketManager })
