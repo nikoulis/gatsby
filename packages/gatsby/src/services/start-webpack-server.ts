@@ -22,6 +22,7 @@ import {
 } from "../utils/webpack-status"
 import { enqueueFlush } from "../utils/page-data"
 import mapTemplatesToStaticQueryHashes from "../utils/map-templates-to-static-query-hashes"
+import { emitter } from "../redux"
 
 export async function startWebpackServer({
   program,
@@ -152,6 +153,8 @@ export async function startWebpackServer({
 
       markWebpackStatusAsDone()
       done()
+      webpackWatching.suspend()
+      emitter.emit(`COMPILATION_DONE`, stats)
       resolve({ compiler, websocketManager, webpackWatching })
     })
   })

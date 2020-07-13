@@ -96,9 +96,17 @@ const developConfig: MachineConfig<IBuildContext, any, AnyEventObject> = {
             cond: ({ compiler }: IBuildContext): boolean => !compiler,
           },
           {
-            target: `waiting`,
+            target: `recompiling`,
           },
         ],
+      },
+    },
+    recompiling: {
+      invoke: {
+        src: `recompile`,
+        onDone: {
+          target: `waiting`,
+        },
       },
     },
     startingDevServers: {

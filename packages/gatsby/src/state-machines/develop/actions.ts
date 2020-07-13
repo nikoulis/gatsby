@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-expressions */
 import {
   assign,
   AnyEventObject,
@@ -13,6 +14,7 @@ import { listenForMutations } from "../../services/listen-for-mutations"
 import { DataLayerResult } from "../data-layer"
 import { assertStore } from "../../utils/assert-store"
 import reporter from "gatsby-cli/lib/reporter"
+import { createWebpackWatcher } from "../../services/listen-to-webpack"
 
 export const callRealApi = (event: IMutationAction, store?: Store): void => {
   assertStore(store)
@@ -75,6 +77,16 @@ export const assignServers = assign<IBuildContext, AnyEventObject>(
   }
 )
 
+export const spawnWebpackListener = assign<IBuildContext, AnyEventObject>({
+  webpackListener: ({ compiler }, { data }) => {
+    console.log({ compiler, data })
+    if (!compiler) {
+      return undefined
+    }
+    return spawn(createWebpackWatcher(compiler))
+  },
+})
+
 export const assignWebhookBody = assign<IBuildContext, AnyEventObject>({
   webhookBody: (_context, { payload }) => payload?.webhookBody,
 })
@@ -110,4 +122,5 @@ export const buildActions: ActionFunctionMap<IBuildContext, AnyEventObject> = {
   assignWebhookBody,
   clearWebhookBody,
   finishParentSpan,
+  spawnWebpackListener,
 }
