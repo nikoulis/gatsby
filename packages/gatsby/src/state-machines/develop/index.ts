@@ -97,6 +97,11 @@ const developConfig: MachineConfig<IBuildContext, any, AnyEventObject> = {
           },
           {
             target: `recompiling`,
+            cond: ({ sourceFilesDirty }: IBuildContext): boolean =>
+              !!sourceFilesDirty,
+          },
+          {
+            target: `waiting`,
           },
         ],
       },
@@ -114,7 +119,7 @@ const developConfig: MachineConfig<IBuildContext, any, AnyEventObject> = {
         src: `startWebpackServer`,
         onDone: {
           target: `waiting`,
-          actions: `assignServers`,
+          actions: [`assignServers`, `spawnWebpackListener`],
         },
       },
     },
@@ -165,6 +170,9 @@ const developConfig: MachineConfig<IBuildContext, any, AnyEventObject> = {
     },
     QUERY_FILE_CHANGED: {
       actions: `markQueryFilesDirty`,
+    },
+    SOURCE_FILE_CHANGED: {
+      actions: `markSourceFilesDirty`,
     },
     WEBHOOK_RECEIVED: {
       target: `initializingDataLayer`,

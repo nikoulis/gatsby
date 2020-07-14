@@ -39,4 +39,5 @@ export interface IBuildContext {
   webpackWatching?: IWebpackWatchingPauseResume
   webpackListener?: Actor<unknown, AnyEventObject>
   queryFilesDirty?: boolean
+  sourceFilesDirty?: boolean
 }

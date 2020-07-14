@@ -60,6 +60,10 @@ export const markQueryFilesDirty = assign<IBuildContext>({
   queryFilesDirty: true,
 })
 
+export const markSourceFilesDirty = assign<IBuildContext>({
+  sourceFilesDirty: true,
+})
+
 export const assignServiceResult = assign<IBuildContext, DoneEventObject>(
   (_context, { data }): DataLayerResult => data
 )
@@ -78,8 +82,7 @@ export const assignServers = assign<IBuildContext, AnyEventObject>(
 )
 
 export const spawnWebpackListener = assign<IBuildContext, AnyEventObject>({
-  webpackListener: ({ compiler }, { data }) => {
-    console.log({ compiler, data })
+  webpackListener: ({ compiler }) => {
     if (!compiler) {
       return undefined
     }
@@ -123,4 +126,5 @@ export const buildActions: ActionFunctionMap<IBuildContext, AnyEventObject> = {
   clearWebhookBody,
   finishParentSpan,
   spawnWebpackListener,
+  markSourceFilesDirty,
 }
